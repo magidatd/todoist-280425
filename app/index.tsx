@@ -1,22 +1,56 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Redirect, useRouter } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { StyleSheet, View, Image, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as WebBrowser from 'expo-web-browser';
+import { useSSO } from '@clerk/clerk-expo';
+import Spinner from 'react-native-loading-spinner-overlay';
+import { Alerts } from '@/utils/alert';
 
 const StartPage = () => {
 	const router = useRouter();
 	const { top } = useSafeAreaInsets();
 
+	const { startSSOFlow } = useSSO();
+	const [loading, setLoading] = useState(false);
+
 	const openLink = async () => {
 		WebBrowser.openBrowserAsync('http://magidacreativestudios.dev');
 	};
 
-	const handleGithub = () => {};
+	const handleGithub = async () => {
+		setLoading(true);
 
-	const handleGoogle = () => {};
+		try {
+			const { createdSessionId, setActive } = await startSSOFlow({ strategy: 'oauth_github' });
+
+			if (createdSessionId) {
+				setActive!({ session: createdSessionId });
+			}
+		} catch (error) {
+			Alerts.showAlertDanger('OAuth error: ', error instanceof Error ? error.message : String(error));
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleGoogle = async () => {
+		setLoading(true);
+
+		try {
+			const { createdSessionId, setActive } = await startSSOFlow({ strategy: 'oauth_google' });
+
+			if (createdSessionId) {
+				setActive!({ session: createdSessionId });
+			}
+		} catch (error) {
+			Alerts.showAlertDanger('OAuth error: ', error instanceof Error ? error.message : String(error));
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	return (
 		<View style={[styles.container, { paddingTop: top }]}>
